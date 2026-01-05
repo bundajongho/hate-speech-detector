@@ -1,0 +1,11 @@
+model/
+api/
+*.py
+requirements.txt
+*.csv
+*.pkl
+__pycache__/
+.python-version
+venv/
+env/
+
