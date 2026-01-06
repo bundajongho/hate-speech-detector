@@ -212,17 +212,19 @@ function App() {
               onChange={(e) => setInputText(e.target.value)}
             />
             
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <ButtonGroup 
-                  onAnalyze={handleAnalyze}
-                  onClear={handleClear}
-                  isLoading={isLoading}
-                  disabled={!modelLoaded || isCheckingModel}
-                />
-              </div>
-              <div className="sm:w-auto">
-                <TrainModelButton onTrainComplete={handleModelTrained} />
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <ButtonGroup 
+                    onAnalyze={handleAnalyze}
+                    onClear={handleClear}
+                    isLoading={isLoading}
+                    disabled={!modelLoaded || isCheckingModel}
+                  />
+                </div>
+                <div className="sm:w-auto">
+                  <TrainModelButton onTrainComplete={handleModelTrained} />
+                </div>
               </div>
             </div>
             {!modelLoaded && !isCheckingModel && (

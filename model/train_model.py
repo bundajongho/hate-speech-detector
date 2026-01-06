@@ -592,8 +592,8 @@ def train_model(csv_path="TABEL DATA LATIH HATESPEECH RISET.csv"):
     model_dict = model.to_dict()
     vectorizer_dict = vectorizer.to_dict()
     
-    # Get total data count before cleaning
-    total_data = initial_count
+    # Use cleaned data count (after removing NaN/duplicates/empty)
+    total_data = cleaned_count
     
     # Convert numpy arrays to lists for JSON
     export_data = {

@@ -3,10 +3,38 @@ import React, { useState } from 'react';
 const TrainModelButton = ({ onTrainComplete }) => {
   const [isTraining, setIsTraining] = useState(false);
   const [trainingProgress, setTrainingProgress] = useState('');
+  const [currentStep, setCurrentStep] = useState('');
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [showCard, setShowCard] = useState(false);
+
+  const parseProgress = (output) => {
+    // Parse output untuk extract progress steps
+    const steps = [
+      { keyword: 'Loading dataset', label: 'Memuat dataset...', percent: 10 },
+      { keyword: 'Cleaning data', label: 'Membersihkan data (NaN/duplikat/kosong)...', percent: 20 },
+      { keyword: 'Preprocessing text', label: 'Preprocessing teks...', percent: 35 },
+      { keyword: 'Splitting data', label: 'Membagi data training & testing...', percent: 50 },
+      { keyword: 'Vectorizing', label: 'Vectorisasi TF-IDF...', percent: 65 },
+      { keyword: 'Training model', label: 'Training model Naive Bayes...', percent: 80 },
+      { keyword: 'Training Accuracy', label: 'Evaluasi model...', percent: 90 },
+      { keyword: 'Model saved', label: 'Menyimpan model...', percent: 95 },
+      { keyword: 'Model copied', label: 'Model siap digunakan!', percent: 100 }
+    ];
+
+    for (const step of steps) {
+      if (output.includes(step.keyword)) {
+        return { step: step.label, percent: step.percent };
+      }
+    }
+    return { step: 'Memproses...', percent: progressPercent };
+  };
 
   const handleTrain = async () => {
     setIsTraining(true);
+    setShowCard(true);
     setTrainingProgress('Memulai training model...');
+    setCurrentStep('Menyiapkan...');
+    setProgressPercent(0);
 
     try {
       // Use environment variable for API URL, fallback to localhost for development
@@ -22,7 +50,13 @@ const TrainModelButton = ({ onTrainComplete }) => {
       const data = await response.json();
 
       if (data.success) {
+        // Parse output untuk progress
+        const output = data.output || '';
+        const progress = parseProgress(output);
+        setCurrentStep('Model berhasil di-train!');
+        setProgressPercent(100);
         setTrainingProgress('Training selesai!');
+        
         showToast('Model berhasil di-train! Halaman akan dimuat ulang...', 'success');
         
         // Dispatch event untuk update modelLoaded di App.jsx
@@ -37,20 +71,23 @@ const TrainModelButton = ({ onTrainComplete }) => {
           window.location.reload();
         }, 2000);
       } else {
+        setCurrentStep('Training gagal!');
+        setProgressPercent(0);
         setTrainingProgress('Training gagal!');
         // Show detailed error message
         const errorMsg = data.message || data.error || 'Training failed';
         showToast(`Error: ${errorMsg}`, 'error');
         console.error('Training error details:', data);
+        setIsTraining(false);
       }
     } catch (error) {
       console.error('Training error:', error);
+      setCurrentStep('Error: Tidak dapat terhubung ke server');
+      setProgressPercent(0);
       setTrainingProgress('Error: Tidak dapat terhubung ke server');
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       showToast(`Tidak dapat terhubung ke server. Pastikan API berjalan di ${API_URL}`, 'error');
-    } finally {
       setIsTraining(false);
-      setTimeout(() => setTrainingProgress(''), 5000);
     }
   };
 
@@ -59,8 +96,21 @@ const TrainModelButton = ({ onTrainComplete }) => {
     window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }));
   };
 
+  // Simulate progress updates during training
+  React.useEffect(() => {
+    if (isTraining && progressPercent < 90) {
+      const interval = setInterval(() => {
+        setProgressPercent(prev => {
+          if (prev >= 90) return prev;
+          return prev + 1;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isTraining, progressPercent]);
+
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <button
         onClick={handleTrain}
         disabled={isTraining}
@@ -83,12 +133,80 @@ const TrainModelButton = ({ onTrainComplete }) => {
           </>
         )}
       </button>
-      {trainingProgress && (
-        <p className="text-xs text-neutral-muted text-center">{trainingProgress}</p>
+
+      {showCard && isTraining && (
+        <div className="card p-6 md:p-8 animate-fade-in mt-4">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <h3 className="text-lg font-bold text-neutral-text">Training Model</h3>
+          </div>
+
+          <div className="space-y-4">
+            {/* Progress Bar */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-neutral-text">{currentStep}</span>
+                <span className="text-sm text-neutral-muted">{progressPercent}%</span>
+              </div>
+              <div className="w-full bg-neutral-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Status Message */}
+            {trainingProgress && (
+              <div className="p-3 rounded-xl bg-primary-50 border border-primary-200">
+                <p className="text-sm text-primary-800">{trainingProgress}</p>
+              </div>
+            )}
+
+            {/* Steps List */}
+            <div className="space-y-2 text-sm text-neutral-muted">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 10 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Memuat dataset</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 20 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Membersihkan data</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 35 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Preprocessing teks</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 50 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Membagi data</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 65 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Vectorisasi TF-IDF</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 80 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Training model Naive Bayes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progressPercent >= 90 ? 'bg-primary-500' : 'bg-neutral-300'}`}></div>
+                <span>Evaluasi & menyimpan model</span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+
+      {showCard && !isTraining && trainingProgress && (
+        <div className="card p-4 mt-4">
+          <p className="text-sm text-neutral-muted text-center">{trainingProgress}</p>
+        </div>
+      )}
+    </>
   );
 };
 
 export default TrainModelButton;
-
