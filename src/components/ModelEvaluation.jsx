@@ -49,23 +49,38 @@ const ModelEvaluation = () => {
         testRatio: data.test_ratio || 0.2,
         features: data.vectorizer?.max_features || data.vectorizer?.n_features || data.max_features || 200,
         vectorizer: 'TF-IDF',
-        trainingMetrics: data.training_metrics || {
-          accuracy: data.training_accuracy || 0,
-          precision: data.training_precision || 0,
-          recall: data.training_recall || 0,
-          f1: data.training_f1 || 0,
-          auc: data.training_auc || 0
+        trainingMetrics: (data.training_metrics && typeof data.training_metrics === 'object') ? {
+          accuracy: data.training_metrics.accuracy ?? data.training_accuracy ?? 0,
+          precision: data.training_metrics.precision ?? data.training_precision ?? 0,
+          recall: data.training_metrics.recall ?? data.training_recall ?? 0,
+          f1: data.training_metrics.f1 ?? data.training_f1 ?? 0,
+          auc: data.training_metrics.auc ?? data.training_auc ?? 0
+        } : {
+          accuracy: data.training_accuracy ?? 0,
+          precision: data.training_precision ?? 0,
+          recall: data.training_recall ?? 0,
+          f1: data.training_f1 ?? 0,
+          auc: data.training_auc ?? 0
         },
-        testingMetrics: data.testing_metrics || {
-          accuracy: data.testing_accuracy || 0,
-          precision: data.testing_precision || 0,
-          recall: data.testing_recall || 0,
-          f1: data.testing_f1 || 0,
-          auc: data.testing_auc || 0
+        testingMetrics: (data.testing_metrics && typeof data.testing_metrics === 'object') ? {
+          accuracy: data.testing_metrics.accuracy ?? data.testing_accuracy ?? 0,
+          precision: data.testing_metrics.precision ?? data.testing_precision ?? 0,
+          recall: data.testing_metrics.recall ?? data.testing_recall ?? 0,
+          f1: data.testing_metrics.f1 ?? data.testing_f1 ?? 0,
+          auc: data.testing_metrics.auc ?? data.testing_auc ?? 0
+        } : {
+          accuracy: data.testing_accuracy ?? 0,
+          precision: data.testing_precision ?? 0,
+          recall: data.testing_recall ?? 0,
+          f1: data.testing_f1 ?? 0,
+          auc: data.testing_auc ?? 0
         },
-        cvMetrics: data.cv_metrics || {
-          accuracy: data.cv_accuracy || 0,
-          std: data.cv_std || 0
+        cvMetrics: (data.cv_metrics && typeof data.cv_metrics === 'object') ? {
+          accuracy: data.cv_metrics.accuracy ?? data.cv_accuracy ?? 0,
+          std: data.cv_metrics.std ?? data.cv_std ?? 0
+        } : {
+          accuracy: data.cv_accuracy ?? 0,
+          std: data.cv_std ?? 0
         }
       });
     } catch (error) {
@@ -128,6 +143,9 @@ const ModelEvaluation = () => {
   }
 
   const formatPercentage = (value) => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '0.00%';
+    }
     return (value * 100).toFixed(2) + '%';
   };
 

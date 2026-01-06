@@ -143,7 +143,10 @@ function App() {
   // Listen for model trained event to update modelLoaded state
   useEffect(() => {
     const handleModelTrained = () => {
-      // Re-check model after training
+      // Mark model as loaded immediately
+      setModelLoaded(true);
+      
+      // Also re-check model after a delay to ensure it's saved
       const checkModel = async () => {
         try {
           const API_URL = import.meta.env.VITE_API_URL || '';

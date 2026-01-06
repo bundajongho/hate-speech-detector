@@ -64,10 +64,13 @@ def train_model():
                 'output': result.stdout
             })
         else:
+            # Return detailed error message
+            error_msg = result.stderr if result.stderr else result.stdout
             return jsonify({
                 'success': False,
                 'error': 'Training failed',
-                'output': result.stderr
+                'message': error_msg[:500] if error_msg else 'Unknown error occurred during training',
+                'output': error_msg
             }), 500
             
     except subprocess.TimeoutExpired:

@@ -23,17 +23,25 @@ const TrainModelButton = ({ onTrainComplete }) => {
 
       if (data.success) {
         setTrainingProgress('Training selesai!');
-        showToast('Model berhasil di-train!', 'success');
+        showToast('Model berhasil di-train! Halaman akan dimuat ulang...', 'success');
+        
+        // Dispatch event untuk update modelLoaded di App.jsx
+        window.dispatchEvent(new Event('modelTrained'));
+        
         if (onTrainComplete) {
           onTrainComplete();
         }
+        
         // Reload page after 2 seconds to load new model
         setTimeout(() => {
           window.location.reload();
         }, 2000);
       } else {
         setTrainingProgress('Training gagal!');
-        showToast(`Error: ${data.error}`, 'error');
+        // Show detailed error message
+        const errorMsg = data.message || data.error || 'Training failed';
+        showToast(`Error: ${errorMsg}`, 'error');
+        console.error('Training error details:', data);
       }
     } catch (error) {
       console.error('Training error:', error);
