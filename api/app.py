@@ -123,6 +123,10 @@ def get_model_info():
             'alpha': model_data.get('alpha'),
             'max_features': model_data.get('max_features'),
             'vocab_size': len(model_data.get('vocab', [])) if 'vocab' in model_data else 0,
+            # Include metrics objects if they exist
+            'training_metrics': model_data.get('training_metrics'),
+            'testing_metrics': model_data.get('testing_metrics'),
+            'cv_metrics': model_data.get('cv_metrics'),
             # Skip word_freq karena terlalu besar
             # 'word_freq': model_data.get('word_freq', {})
         }

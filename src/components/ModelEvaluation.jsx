@@ -9,74 +9,68 @@ const ModelEvaluation = () => {
   }, []);
 
   const loadModelInfo = async () => {
+    setIsLoading(true);
     try {
-      const response = await fetch('/model.json');
-      if (response.ok) {
-        const data = await response.json();
-        setModelInfo({
-          name: 'Multinomial Naive Bayes',
-          alpha: data.alpha || 2.0,
-          totalData: data.total_data || 2000,
-          trainSize: data.train_size || 1564,
-          testSize: data.test_size || 393,
-          trainRatio: data.train_ratio || 0.8,
-          testRatio: data.test_ratio || 0.2,
-          features: data.vectorizer?.max_features || data.vectorizer?.n_features || 200,
-          vectorizer: 'TF-IDF',
-          trainingMetrics: data.training_metrics || {
-            accuracy: data.training_accuracy || 0.7174,
-            precision: 0.7174,
-            recall: 0.7174,
-            f1: 0.7174,
-            auc: 0.8740
-          },
-          testingMetrics: data.testing_metrics || {
-            accuracy: data.testing_accuracy || 0.6590,
-            precision: 0.6590,
-            recall: 0.6590,
-            f1: 0.6590,
-            auc: 0.8122
-          },
-          cvMetrics: data.cv_metrics || {
-            accuracy: 0.6247,
-            std: 0.0268
+      // Try to fetch from API first, fallback to local file
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      let response;
+      let data;
+      
+      if (API_URL) {
+        // Fetch from API
+        response = await fetch(`${API_URL}/api/model-info`);
+        if (response.ok) {
+          const apiData = await response.json();
+          if (apiData.success && apiData.data) {
+            data = apiData.data; // API returns {success: true, data: {...}}
+          } else {
+            throw new Error('API returned invalid data');
           }
-        });
+        } else {
+          throw new Error('API not available');
+        }
       } else {
-        // Fallback to default values if model.json not found
-        setModelInfo({
-          name: 'Multinomial Naive Bayes',
-          alpha: 2.0,
-          totalData: 2000,
-          trainSize: 1564,
-          testSize: 393,
-          trainRatio: 0.8,
-          testRatio: 0.2,
-          features: 200,
-          vectorizer: 'TF-IDF',
-          trainingMetrics: {
-            accuracy: 0.7174,
-            precision: 0.7174,
-            recall: 0.7174,
-            f1: 0.7174,
-            auc: 0.8740
-          },
-          testingMetrics: {
-            accuracy: 0.6590,
-            precision: 0.6590,
-            recall: 0.6590,
-            f1: 0.6590,
-            auc: 0.8122
-          },
-          cvMetrics: {
-            accuracy: 0.6247,
-            std: 0.0268
-          }
-        });
+        // Fallback to local file
+        response = await fetch('/model.json');
+        if (response.ok) {
+          data = await response.json();
+        } else {
+          throw new Error('Model file not found');
+        }
       }
+
+      setModelInfo({
+        name: 'Multinomial Naive Bayes',
+        alpha: data.alpha || 2.0,
+        totalData: data.total_data || 0,
+        trainSize: data.train_size || 0,
+        testSize: data.test_size || 0,
+        trainRatio: data.train_ratio || 0.8,
+        testRatio: data.test_ratio || 0.2,
+        features: data.vectorizer?.max_features || data.vectorizer?.n_features || data.max_features || 200,
+        vectorizer: 'TF-IDF',
+        trainingMetrics: data.training_metrics || {
+          accuracy: data.training_accuracy || 0,
+          precision: data.training_precision || 0,
+          recall: data.training_recall || 0,
+          f1: data.training_f1 || 0,
+          auc: data.training_auc || 0
+        },
+        testingMetrics: data.testing_metrics || {
+          accuracy: data.testing_accuracy || 0,
+          precision: data.testing_precision || 0,
+          recall: data.testing_recall || 0,
+          f1: data.testing_f1 || 0,
+          auc: data.testing_auc || 0
+        },
+        cvMetrics: data.cv_metrics || {
+          accuracy: data.cv_accuracy || 0,
+          std: data.cv_std || 0
+        }
+      });
     } catch (error) {
       console.error('Error loading model info:', error);
-      // Fallback to default values
+      // Fallback to default values if model.json not found
       setModelInfo({
         name: 'Multinomial Naive Bayes',
         alpha: 2.0,

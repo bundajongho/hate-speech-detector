@@ -1,12 +1,12 @@
 import React from 'react';
 
-const ButtonGroup = ({ onAnalyze, onClear, isLoading = false }) => {
+const ButtonGroup = ({ onAnalyze, onClear, isLoading = false, disabled = false }) => {
   return (
     <div className="flex flex-col sm:flex-row gap-3 pt-2">
       <button
         onClick={onAnalyze}
-        disabled={isLoading}
-        className="btn-primary flex items-center justify-center gap-2 text-base"
+        disabled={isLoading || disabled}
+        className="btn-primary flex items-center justify-center gap-2 text-base disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <>

@@ -38,7 +38,8 @@ const TrainModelButton = ({ onTrainComplete }) => {
     } catch (error) {
       console.error('Training error:', error);
       setTrainingProgress('Error: Tidak dapat terhubung ke server');
-      showToast('Tidak dapat terhubung ke server. Pastikan API berjalan di http://localhost:5000', 'error');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      showToast(`Tidak dapat terhubung ke server. Pastikan API berjalan di ${API_URL}`, 'error');
     } finally {
       setIsTraining(false);
       setTimeout(() => setTrainingProgress(''), 5000);
