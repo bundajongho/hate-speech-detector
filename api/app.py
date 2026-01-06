@@ -13,7 +13,7 @@ CORS(app, resources={
         "origins": [
             "http://localhost:5173",
             "http://localhost:3000",
-            "https://nlp-nb_hate-speech-detector.vercel.app",
+            "https://nb_hate-speech-detector.vercel.app",
             "*"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
