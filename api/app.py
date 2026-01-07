@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sys
 import os
+import subprocess
 from pathlib import Path
 import io
 from contextlib import redirect_stdout, redirect_stderr
@@ -40,14 +41,6 @@ def train_model_endpoint():
         # Get project root directory
         project_root = Path(__file__).parent.parent
         
-        # Add model directory to path for import
-        model_dir = project_root / "model"
-        if str(model_dir) not in sys.path:
-            sys.path.insert(0, str(model_dir))
-        
-        # Import train_model function directly
-        from train_model import train_model
-        
         # Check if CSV file exists
         csv_path = project_root / "TABEL DATA LATIH HATESPEECH RISET.csv"
         if not csv_path.exists():
@@ -56,56 +49,113 @@ def train_model_endpoint():
                 'error': f'Dataset CSV not found at {csv_path}'
             }), 404
         
-        # Capture stdout and stderr
-        output_buffer = io.StringIO()
-        error_buffer = io.StringIO()
+        # Get the train_model.py file path
+        train_model_path = project_root / "model" / "train_model.py"
         
+        if not train_model_path.exists():
+            return jsonify({
+                'success': False,
+                'error': f'train_model.py not found at {train_model_path}'
+            }), 404
+        
+        # Try direct import first (more reliable)
         try:
-            with redirect_stdout(output_buffer), redirect_stderr(error_buffer):
-                # Call train_model function directly
-                train_model(str(csv_path))
+            # Add project root to path
+            project_root_str = str(project_root)
+            if project_root_str not in sys.path:
+                sys.path.insert(0, project_root_str)
             
-            output = output_buffer.getvalue()
-            errors = error_buffer.getvalue()
+            # Import using module path
+            from model.train_model import train_model as train_model_func
+            
+            # Capture stdout and stderr
+            output_buffer = io.StringIO()
+            error_buffer = io.StringIO()
+            
+            try:
+                with redirect_stdout(output_buffer), redirect_stderr(error_buffer):
+                    # Call train_model function directly
+                    train_model_func(str(csv_path))
+                
+                output = output_buffer.getvalue()
+                errors = error_buffer.getvalue()
 
-            # Check if model files were created
-            model_json = project_root / "public" / "model.json"
-            if not model_json.exists():
+                # Check if model files were created
+                model_json = project_root / "public" / "model.json"
+                if not model_json.exists():
+                    return jsonify({
+                        'success': False,
+                        'error': 'Training completed but model.json was not created',
+                        'output': output,
+                        'errors': errors
+                    }), 500
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Model trained successfully',
+                    'output': output
+                })
+                
+            except Exception as train_error:
+                import traceback
+                error_trace = traceback.format_exc()
+                output = output_buffer.getvalue()
+                errors = error_buffer.getvalue()
+                
                 return jsonify({
                     'success': False,
-                    'error': 'Training completed but model.json was not created',
+                    'error': 'Training failed',
+                    'message': str(train_error),
+                    'traceback': error_trace,
                     'output': output,
                     'errors': errors
                 }), 500
+                
+        except ImportError as import_err:
+            # If import fails, fallback to subprocess
+            try:
+                # Run the training script with subprocess
+                result = subprocess.run(
+                    [sys.executable, str(train_model_path)],
+                    cwd=str(project_root),
+                    capture_output=True,
+                    text=True,
+                    timeout=900,  # 15 minutes
+                    env={**os.environ, 'PYTHONUNBUFFERED': '1'}  # Clean environment
+                )
+                
+                if result.returncode == 0:
+                    # Check if model files were created
+                    model_json = project_root / "public" / "model.json"
+                    if not model_json.exists():
+                        return jsonify({
+                            'success': False,
+                            'error': 'Training completed but model.json was not created',
+                            'output': result.stdout,
+                            'errors': result.stderr
+                        }), 500
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': 'Model trained successfully',
+                        'output': result.stdout
+                    })
+                else:
+                    # Return detailed error message
+                    error_msg = result.stderr if result.stderr else result.stdout
+                    return jsonify({
+                        'success': False,
+                        'error': 'Training failed',
+                        'message': error_msg[:2000] if error_msg else 'Unknown error occurred during training',
+                        'output': error_msg
+                    }), 500
+                    
+            except subprocess.TimeoutExpired:
+                return jsonify({
+                    'success': False,
+                    'error': 'Training timeout (exceeded 15 minutes). Model training may be too intensive for this environment.'
+                }), 500
             
-            return jsonify({
-                'success': True,
-                'message': 'Model trained successfully',
-                'output': output
-            })
-            
-        except Exception as train_error:
-            import traceback
-            error_trace = traceback.format_exc()
-            output = output_buffer.getvalue()
-            errors = error_buffer.getvalue()
-            
-            return jsonify({
-                'success': False,
-                'error': 'Training failed',
-                'message': str(train_error),
-                'traceback': error_trace,
-                'output': output,
-                'errors': errors
-            }), 500
-            
-    except ImportError as e:
-        return jsonify({
-            'success': False,
-            'error': f'Failed to import train_model: {str(e)}',
-            'message': 'Make sure train_model.py exists in the model directory'
-        }), 500
-
     except Exception as e:
         import traceback
         return jsonify({
