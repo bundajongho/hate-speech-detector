@@ -1,9 +1,10 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import subprocess
 import sys
 import os
 from pathlib import Path
+import io
+from contextlib import redirect_stdout, redirect_stderr
 
 app = Flask(__name__)
 # Enable CORS for React frontend
@@ -33,51 +34,78 @@ def index():
     })
 
 @app.route('/api/train', methods=['POST'])
-def train_model():
+def train_model_endpoint():
     """Train model via API"""
     try:
         # Get project root directory
         project_root = Path(__file__).parent.parent
         
-        # Run train_model.py
-        script_path = project_root / "model" / "train_model.py"
+        # Add model directory to path for import
+        model_dir = project_root / "model"
+        if str(model_dir) not in sys.path:
+            sys.path.insert(0, str(model_dir))
         
-        if not script_path.exists():
+        # Import train_model function directly
+        from train_model import train_model
+        
+        # Check if CSV file exists
+        csv_path = project_root / "TABEL DATA LATIH HATESPEECH RISET.csv"
+        if not csv_path.exists():
             return jsonify({
                 'success': False,
-                'error': f'Training script not found at {script_path}'
+                'error': f'Dataset CSV not found at {csv_path}'
             }), 404
         
-        # Run the training script with longer timeout (15 minutes)
-        result = subprocess.run(
-            [sys.executable, str(script_path)],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            timeout=900  # 15 minutes timeout (increased from 5)
-        )
+        # Capture stdout and stderr
+        output_buffer = io.StringIO()
+        error_buffer = io.StringIO()
         
-        if result.returncode == 0:
+        try:
+            with redirect_stdout(output_buffer), redirect_stderr(error_buffer):
+                # Call train_model function directly
+                train_model(str(csv_path))
+            
+            output = output_buffer.getvalue()
+            errors = error_buffer.getvalue()
+
+            # Check if model files were created
+            model_json = project_root / "public" / "model.json"
+            if not model_json.exists():
+                return jsonify({
+                    'success': False,
+                    'error': 'Training completed but model.json was not created',
+                    'output': output,
+                    'errors': errors
+                }), 500
+            
             return jsonify({
                 'success': True,
                 'message': 'Model trained successfully',
-                'output': result.stdout
+                'output': output
             })
-        else:
-            # Return detailed error message
-            error_msg = result.stderr if result.stderr else result.stdout
+            
+        except Exception as train_error:
+            import traceback
+            error_trace = traceback.format_exc()
+            output = output_buffer.getvalue()
+            errors = error_buffer.getvalue()
+            
             return jsonify({
                 'success': False,
                 'error': 'Training failed',
-                'message': error_msg[:1000] if error_msg else 'Unknown error occurred during training',  # Increased from 500
-                'output': error_msg
+                'message': str(train_error),
+                'traceback': error_trace,
+                'output': output,
+                'errors': errors
             }), 500
             
-    except subprocess.TimeoutExpired:
+    except ImportError as e:
         return jsonify({
             'success': False,
-            'error': 'Training timeout (exceeded 15 minutes). Model training may be too intensive for this environment.'
+            'error': f'Failed to import train_model: {str(e)}',
+            'message': 'Make sure train_model.py exists in the model directory'
         }), 500
+
     except Exception as e:
         import traceback
         return jsonify({
@@ -140,6 +168,7 @@ def get_model_info():
             'success': True,
             'data': filtered_data
         })
+
     except Exception as e:
         return jsonify({
             'success': False,
