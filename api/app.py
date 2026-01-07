@@ -272,13 +272,17 @@ def get_model_status():
                 with open(json_path, 'r', encoding='utf-8') as f:
                     model_data = json.load(f)
                 
-                # Extract metadata
+                # Extract metadata - ensure all fields are included
+                cv_metrics = model_data.get('cv_metrics', {})
                 model_info = {
                     'training_accuracy': model_data.get('training_accuracy'),
                     'testing_accuracy': model_data.get('testing_accuracy'),
                     'training_metrics': model_data.get('training_metrics'),
                     'testing_metrics': model_data.get('testing_metrics'),
-                    'cv_metrics': model_data.get('cv_metrics'),
+                    'cv_metrics': {
+                        'accuracy': cv_metrics.get('accuracy') if isinstance(cv_metrics, dict) else None,
+                        'std': cv_metrics.get('std') if isinstance(cv_metrics, dict) else None,
+                    } if cv_metrics else None,
                     'total_data': model_data.get('total_data'),
                     'train_size': model_data.get('train_size'),
                     'test_size': model_data.get('test_size'),
