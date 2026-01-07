@@ -596,11 +596,12 @@ def train_model(csv_path="TABEL DATA LATIH HATESPEECH RISET.csv"):
     total_data = cleaned_count
     
     # Convert numpy arrays to lists for JSON
+    # Skip word_freq in JSON to speed up saving (it's filtered in API anyway)
     export_data = {
         'model': model_dict,
         'vectorizer': vectorizer_dict,
         'vocab': list(vocab),
-        'word_freq': {k: int(v) for k, v in word_freq.items()},
+        # 'word_freq': {k: int(v) for k, v in word_freq.items()},  # Skip to speed up
         'map_target': map_target,
         'reverse': reverse,
         'training_accuracy': float(train_acc),
@@ -632,13 +633,17 @@ def train_model(csv_path="TABEL DATA LATIH HATESPEECH RISET.csv"):
         }
     }
     
-    # Save to model directory
+    # Save to model directory (with progress print)
+    print("\nMenyimpan model.json...")
     with open(output_dir / "model.json", "w", encoding="utf-8") as f:
         json.dump(export_data, f, indent=2, ensure_ascii=False)
+    print("✓ model.json saved to model/")
     
     # Also copy to public directory for web access
+    print("Menyalin ke public/model.json...")
     with open(public_dir / "model.json", "w", encoding="utf-8") as f:
         json.dump(export_data, f, indent=2, ensure_ascii=False)
+    print("✓ model.json copied to public/")
     
     print(f"\nModel saved to {output_dir / 'model.pkl'}")
     print(f"Model exported to {output_dir / 'model.json'}")

@@ -17,6 +17,10 @@ const TrainModelButton = ({ onTrainComplete }) => {
       { keyword: 'Vectorizing', label: 'Vectorisasi TF-IDF...', percent: 65 },
       { keyword: 'Training model', label: 'Training model Naive Bayes...', percent: 80 },
       { keyword: 'Training Accuracy', label: 'Evaluasi model...', percent: 90 },
+      { keyword: 'Menyimpan model.json', label: 'Menyimpan model...', percent: 92 },
+      { keyword: 'model.json saved', label: 'Menyimpan model...', percent: 94 },
+      { keyword: 'Menyalin ke public', label: 'Menyalin model ke public...', percent: 96 },
+      { keyword: 'model.json copied', label: 'Model siap digunakan!', percent: 100 },
       { keyword: 'Model saved', label: 'Menyimpan model...', percent: 95 },
       { keyword: 'Model copied', label: 'Model siap digunakan!', percent: 100 }
     ];
@@ -40,13 +44,19 @@ const TrainModelButton = ({ onTrainComplete }) => {
       // Use environment variable for API URL, fallback to localhost for development
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 900000); // 15 minutes
+      
       const response = await fetch(`${API_URL}/api/train`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (data.success) {
@@ -81,12 +91,19 @@ const TrainModelButton = ({ onTrainComplete }) => {
         setIsTraining(false);
       }
     } catch (error) {
-      console.error('Training error:', error);
-      setCurrentStep('Error: Tidak dapat terhubung ke server');
-      setProgressPercent(0);
-      setTrainingProgress('Error: Tidak dapat terhubung ke server');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      showToast(`Tidak dapat terhubung ke server. Pastikan API berjalan di ${API_URL}`, 'error');
+      if (error.name === 'AbortError') {
+        setCurrentStep('Error: Training timeout (lebih dari 15 menit)');
+        setProgressPercent(0);
+        setTrainingProgress('Training memakan waktu terlalu lama. Coba train di local atau upgrade hosting.');
+        showToast('Training timeout. Training memakan waktu terlalu lama untuk environment ini.', 'error');
+      } else {
+        console.error('Training error:', error);
+        setCurrentStep('Error: Tidak dapat terhubung ke server');
+        setProgressPercent(0);
+        setTrainingProgress('Error: Tidak dapat terhubung ke server');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        showToast(`Tidak dapat terhubung ke server. Pastikan API berjalan di ${API_URL}`, 'error');
+      }
       setIsTraining(false);
     }
   };

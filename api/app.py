@@ -48,13 +48,13 @@ def train_model():
                 'error': f'Training script not found at {script_path}'
             }), 404
         
-        # Run the training script
+        # Run the training script with longer timeout (15 minutes)
         result = subprocess.run(
             [sys.executable, str(script_path)],
             cwd=str(project_root),
             capture_output=True,
             text=True,
-            timeout=300  # 5 minutes timeout
+            timeout=900  # 15 minutes timeout (increased from 5)
         )
         
         if result.returncode == 0:
@@ -69,19 +69,21 @@ def train_model():
             return jsonify({
                 'success': False,
                 'error': 'Training failed',
-                'message': error_msg[:500] if error_msg else 'Unknown error occurred during training',
+                'message': error_msg[:1000] if error_msg else 'Unknown error occurred during training',  # Increased from 500
                 'output': error_msg
             }), 500
             
     except subprocess.TimeoutExpired:
         return jsonify({
             'success': False,
-            'error': 'Training timeout (exceeded 5 minutes)'
+            'error': 'Training timeout (exceeded 15 minutes). Model training may be too intensive for this environment.'
         }), 500
     except Exception as e:
+        import traceback
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'traceback': traceback.format_exc()
         }), 500
 
 @app.route('/api/model-info', methods=['GET'])
