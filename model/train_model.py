@@ -575,18 +575,36 @@ def train_model(csv_path="TABEL DATA LATIH HATESPEECH RISET.csv"):
     
     # Also create public directory for web access
     public_dir = Path("public")
-    public_dir.mkdir(exist_ok=True)
+    public_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save as pickle
-    with open(output_dir / "model.pkl", "wb") as f:
-        pickle.dump({
-            'model': model,
-            'vectorizer': vectorizer,
-            'vocab': vocab,
-            'word_freq': word_freq,
-            'map_target': map_target,
-            'reverse': reverse
-        }, f)
+    # Save as pickle with error handling
+    print("\nMenyimpan model.pkl...")
+    try:
+        # Ensure directory exists
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save to temporary file first (atomic write)
+        temp_pkl = output_dir / "model.pkl.tmp"
+        with open(temp_pkl, "wb") as f:
+            pickle.dump({
+                'model': model,
+                'vectorizer': vectorizer,
+                'vocab': vocab,
+                'word_freq': word_freq,
+                'map_target': map_target,
+                'reverse': reverse
+            }, f)
+        
+        # Atomic rename
+        temp_pkl.replace(output_dir / "model.pkl")
+        print("✓ model.pkl saved")
+    except OSError as e:
+        print(f"✗ Error saving model.pkl: {e}")
+        print(f"  Disk space or permission issue. Check PythonAnywhere disk quota.")
+        raise
+    except Exception as e:
+        print(f"✗ Error saving model.pkl: {e}")
+        raise
     
     # Export to JSON for JavaScript
     model_dict = model.to_dict()
@@ -633,17 +651,50 @@ def train_model(csv_path="TABEL DATA LATIH HATESPEECH RISET.csv"):
         }
     }
     
-    # Save to model directory (with progress print)
+    # Save to model directory (with progress print and error handling)
     print("\nMenyimpan model.json...")
-    with open(output_dir / "model.json", "w", encoding="utf-8") as f:
-        json.dump(export_data, f, indent=2, ensure_ascii=False)
-    print("✓ model.json saved to model/")
+    try:
+        # Ensure directory exists
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save to temporary file first (atomic write)
+        temp_json = output_dir / "model.json.tmp"
+        with open(temp_json, "w", encoding="utf-8") as f:
+            json.dump(export_data, f, indent=2, ensure_ascii=False)
+        
+        # Atomic rename
+        temp_json.replace(output_dir / "model.json")
+        print("✓ model.json saved to model/")
+    except OSError as e:
+        print(f"✗ Error saving model.json: {e}")
+        print(f"  Disk space or permission issue. Check PythonAnywhere disk quota.")
+        raise
+    except Exception as e:
+        print(f"✗ Error saving model.json: {e}")
+        raise
     
     # Also copy to public directory for web access
     print("Menyalin ke public/model.json...")
-    with open(public_dir / "model.json", "w", encoding="utf-8") as f:
-        json.dump(export_data, f, indent=2, ensure_ascii=False)
-    print("✓ model.json copied to public/")
+    try:
+        # Ensure directory exists
+        public_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save to temporary file first (atomic write)
+        temp_public_json = public_dir / "model.json.tmp"
+        with open(temp_public_json, "w", encoding="utf-8") as f:
+            json.dump(export_data, f, indent=2, ensure_ascii=False)
+        
+        # Atomic rename
+        temp_public_json.replace(public_dir / "model.json")
+        print("✓ model.json copied to public/")
+    except OSError as e:
+        print(f"✗ Error copying to public/model.json: {e}")
+        print(f"  Disk space or permission issue. Check PythonAnywhere disk quota.")
+        # Don't raise here, model is already saved to model/ directory
+        print("  Warning: Model saved to model/ but not copied to public/")
+    except Exception as e:
+        print(f"✗ Error copying to public/model.json: {e}")
+        print("  Warning: Model saved to model/ but not copied to public/")
     
     print(f"\nModel saved to {output_dir / 'model.pkl'}")
     print(f"Model exported to {output_dir / 'model.json'}")

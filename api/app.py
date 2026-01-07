@@ -9,19 +9,23 @@ from contextlib import redirect_stdout, redirect_stderr
 
 app = Flask(__name__)
 # Enable CORS for React frontend
-# In production, replace '*' with your Vercel domain
+# Fix CORS configuration - remove trailing slash and add proper headers
 CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:5173",
             "http://localhost:3000",
-            "https://nb-hate-speech-detector.vercel.app/",
-            "*"
+            "https://nb-hate-speech-detector.vercel.app",  # Remove trailing slash
+            "*"  # Allow all origins as fallback
         ],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": False
     }
 })
+
+# Also enable CORS for root route
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/', methods=['GET'])
 def index():
@@ -34,9 +38,13 @@ def index():
         }
     })
 
-@app.route('/api/train', methods=['POST'])
+@app.route('/api/train', methods=['POST', 'OPTIONS'])
 def train_model_endpoint():
     """Train model via API"""
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'OK'}), 200
+    
     try:
         # Get project root directory
         project_root = Path(__file__).parent.parent
@@ -156,13 +164,21 @@ def train_model_endpoint():
                         'success': False,
                         'error': 'Training failed',
                         'message': error_msg[:2000] if error_msg else 'Unknown error occurred during training',
-                        'output': error_msg
+                        'output': error_msg,
+                        'returncode': result.returncode
                     }), 500
                     
             except subprocess.TimeoutExpired:
                 return jsonify({
                     'success': False,
                     'error': 'Training timeout (exceeded 15 minutes). Model training may be too intensive for this environment.'
+                }), 500
+            except Exception as subprocess_err:
+                import traceback
+                return jsonify({
+                    'success': False,
+                    'error': f'Subprocess error: {str(subprocess_err)}',
+                    'traceback': traceback.format_exc()
                 }), 500
             
     except Exception as e:
