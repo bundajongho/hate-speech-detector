@@ -2,7 +2,7 @@
 
 Aplikasi web modern untuk mendeteksi hate speech menggunakan React JS dan Tailwind CSS dengan desain yang canggih, interaktif, dan responsif.
 
-anyway ini dummy buat porto aja si
+anyway ini bikin buat porto aja si
 
 ---
 Copyright © 2025 Asta Production. All rights reserved.
