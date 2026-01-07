@@ -131,6 +131,12 @@ function App() {
         <div className="space-y-6">
           <Header />
           
+          {/* 1. Status Model Card */}
+          <div className="card p-6 md:p-8 animate-fade-in">
+            <CheckModelStatus onStatusChange={handleModelStatusChange} />
+          </div>
+          
+          {/* 2. Input Card */}
           <div className="card p-6 md:p-8 space-y-6 animate-fade-in">
             <InputArea 
               value={inputText}
@@ -157,27 +163,20 @@ function App() {
             )}
           </div>
           
-          {/* Check Model Status Card - Separate from input area */}
-          <div className="card p-6 md:p-8 animate-fade-in">
-            <CheckModelStatus onStatusChange={handleModelStatusChange} />
-          </div>
-          
-          {/* Model Evaluation - Show evaluation metrics */}
-          <ModelEvaluation />
-          
+          {/* 3. Hasil Analisis Card - Only show when there's a result */}
           {result && (
-            <div ref={resultRef} className="space-y-6 animate-slide-up">
+            <div ref={resultRef}>
               <ResultDisplay result={result} proba={result?.proba} />
-              <ProbabilityBars proba={result.proba} />
-              <ModelEvaluation />
             </div>
           )}
           
-          {!result && (
-            <div className="card p-8 animate-fade-in">
-              <ResultDisplay result={null} proba={null} />
-            </div>
+          {/* 4. Probabilitas Klasifikasi Card - Only show when there's a result */}
+          {result && (
+            <ProbabilityBars proba={result.proba} />
           )}
+          
+          {/* 5. Informasi Model dan Evaluasi Card - Always show */}
+          <ModelEvaluation />
           
           <Footer />
         </div>

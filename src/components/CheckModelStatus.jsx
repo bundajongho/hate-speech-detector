@@ -115,10 +115,6 @@ const CheckModelStatus = ({ onStatusChange }) => {
     }
   };
 
-  const formatPercentage = (value) => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    return `${(value * 100).toFixed(2)}%`;
-  };
 
   return (
     <div className="space-y-4">
@@ -176,116 +172,6 @@ const CheckModelStatus = ({ onStatusChange }) => {
             </div>
           </div>
 
-          {modelStatus.status === 'ready' && modelStatus.data && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-neutral-50">
-                  <p className="text-xs text-neutral-muted mb-1">Training Accuracy</p>
-                  <p className="text-lg font-bold text-neutral-text">
-                    {formatPercentage(modelStatus.data.training_accuracy)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-neutral-50">
-                  <p className="text-xs text-neutral-muted mb-1">Testing Accuracy</p>
-                  <p className="text-lg font-bold text-neutral-text">
-                    {formatPercentage(modelStatus.data.testing_accuracy)}
-                  </p>
-                </div>
-              </div>
-
-              {modelStatus.data.training_metrics && (
-                <div className="p-4 rounded-lg bg-neutral-50 space-y-2">
-                  <p className="text-sm font-semibold text-neutral-text mb-2">Training Metrics</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-neutral-muted">Precision: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.training_metrics.precision)}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">Recall: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.training_metrics.recall)}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">F1-Score: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.training_metrics.f1)}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">AUC-ROC: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.training_metrics.auc)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {modelStatus.data.testing_metrics && (
-                <div className="p-4 rounded-lg bg-neutral-50 space-y-2">
-                  <p className="text-sm font-semibold text-neutral-text mb-2">Testing Metrics</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-neutral-muted">Precision: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.testing_metrics.precision)}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">Recall: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.testing_metrics.recall)}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">F1-Score: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.testing_metrics.f1)}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">AUC-ROC: </span>
-                      <span className="font-medium">{formatPercentage(modelStatus.data.testing_metrics.auc)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {modelStatus.data.cv_metrics && (
-                <div className="p-4 rounded-lg bg-neutral-50 space-y-2">
-                  <p className="text-sm font-semibold text-neutral-text mb-2">Cross Validation (5-Fold)</p>
-                  <div className="text-sm">
-                    <span className="text-neutral-muted">Mean Accuracy: </span>
-                    <span className="font-medium">
-                      {formatPercentage(modelStatus.data.cv_metrics.accuracy)}
-                      {modelStatus.data.cv_metrics.std !== undefined && modelStatus.data.cv_metrics.std !== null && (
-                        <span className="text-neutral-muted"> ± {formatPercentage(modelStatus.data.cv_metrics.std)}</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {modelStatus.data.total_data && (
-                <div className="p-3 rounded-lg bg-neutral-50">
-                  <p className="text-xs text-neutral-muted mb-1">Total Data Training</p>
-                  <p className="text-lg font-bold text-neutral-text">{modelStatus.data.total_data.toLocaleString()} data</p>
-                  {modelStatus.data.train_size && modelStatus.data.test_size && (
-                    <div className="mt-2 text-xs text-neutral-muted">
-                      Training: {modelStatus.data.train_size.toLocaleString()} ({((modelStatus.data.train_size / modelStatus.data.total_data) * 100).toFixed(1)}%) | 
-                      Testing: {modelStatus.data.test_size.toLocaleString()} ({((modelStatus.data.test_size / modelStatus.data.total_data) * 100).toFixed(1)}%)
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {modelStatus.data.alpha && modelStatus.data.max_features && (
-                <div className="p-3 rounded-lg bg-neutral-50">
-                  <p className="text-xs text-neutral-muted mb-2">Model Configuration</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-neutral-muted">Alpha: </span>
-                      <span className="font-medium">{modelStatus.data.alpha}</span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-muted">Max Features: </span>
-                      <span className="font-medium">{modelStatus.data.max_features}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {lastChecked && (
             <div className="pt-4 border-t border-neutral-200">
