@@ -10,7 +10,7 @@ const Footer = () => {
           </svg>
           <span className="font-semibold">Asta Production</span>
         </div>
-        <div className="h-px w-20 bg-gradient-to-r from-transparent via-neutral-border to-transparent"></div>
+        <div className="h-[1px] w-20 bg-neutral-300 opacity-70"></div>
         <p className="text-neutral-muted text-xs">
           © 2025 All rights reserved
         </p>
